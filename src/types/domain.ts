@@ -85,6 +85,7 @@ export const TurnSchema = z.object({
   questionKind: QuestionKindSchema.nullable(),
   sttConfidence: z.number().min(0).max(1).nullable(),
   audioUrl: z.string().url().nullable(),
+  videoUrl: z.string().url().nullable().optional(),
   sourceQuestionId: z.string().min(1).max(80).nullable(),
   spokenDurationMs: z.number().int().min(0).max(300_000).nullable(),
   createdAt: TimestampSchema,
@@ -161,6 +162,7 @@ export const SubmitAnswerRequestSchema = z.object({
   text: NonEmptyStringSchema,
   sttConfidence: z.number().min(0).max(1).optional(),
   spokenDurationMs: z.number().int().min(0).max(300_000).optional(),
+  videoUrl: z.string().url().optional(),
 })
 export type SubmitAnswerRequest = z.infer<typeof SubmitAnswerRequestSchema>
 
