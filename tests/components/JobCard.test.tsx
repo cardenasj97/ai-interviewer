@@ -23,6 +23,7 @@ function makeJob(overrides: Partial<JobListItemWithPack> = {}): JobListItemWithP
     title: 'Frontend Engineer',
     shortDescription: 'Build delightful UIs with React and TypeScript.',
     level: 'mid',
+    questionPack: [],
     ...overrides,
   }
 }

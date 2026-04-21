@@ -2,7 +2,7 @@ import { apiFetch } from './client'
 import type { Job, JobListItem } from '@/types/domain'
 
 export type QuestionPack = Job['questionPack']
-export type JobListItemWithPack = JobListItem & { questionPack?: QuestionPack }
+export type JobListItemWithPack = JobListItem
 
 export function listJobs(): Promise<JobListItemWithPack[]> {
   return apiFetch<JobListItemWithPack[]>('/jobs')

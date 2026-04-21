@@ -45,6 +45,7 @@ export const JobListItemSchema = JobSchema.pick({
   title: true,
   shortDescription: true,
   level: true,
+  questionPack: true,
 })
 export type JobListItem = z.infer<typeof JobListItemSchema>
 

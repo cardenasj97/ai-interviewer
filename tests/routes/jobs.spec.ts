@@ -17,6 +17,7 @@ const mockListItem: JobListItem = {
   title: 'Frontend Engineer',
   shortDescription: 'Build delightful UIs.',
   level: 'mid',
+  questionPack: [],
 }
 
 const mockJob: Job = {

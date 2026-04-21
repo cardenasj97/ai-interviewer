@@ -30,6 +30,7 @@ function rowToJobListItem(row: typeof jobs.$inferSelect): JobListItem {
     title: row.title,
     shortDescription: row.shortDescription,
     level: row.level,
+    questionPack: row.questionPack as JobListItem['questionPack'],
   }
 }
 
