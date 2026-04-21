@@ -6,9 +6,12 @@ import ResultsPage from './pages/ResultsPage'
 
 function NotFoundPage() {
   return (
-    <section className="mx-auto max-w-4xl p-6">
-      <h1 className="text-2xl font-semibold">Page not found</h1>
-      <p className="mt-2 text-slate-600">That URL doesn&apos;t match a known route.</p>
+    <section className="mx-auto max-w-4xl p-6 text-center">
+      <h1 className="text-3xl font-bold text-slate-900">Lost your interview?</h1>
+      <p className="mt-3 text-slate-500">That page doesn&apos;t exist.</p>
+      <a href="/" className="mt-6 inline-block text-indigo-600 hover:underline">
+        Back to jobs
+      </a>
     </section>
   )
 }
