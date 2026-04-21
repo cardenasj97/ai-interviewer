@@ -8,6 +8,13 @@
       "when": 1776778247148,
       "tag": "0000_naive_inertia",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776792409065,
+      "tag": "0001_mushy_avengers",
+      "breakpoints": true
     }
   ]
 }
