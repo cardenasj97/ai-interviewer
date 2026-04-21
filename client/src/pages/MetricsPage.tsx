@@ -110,7 +110,7 @@ export default function MetricsPage() {
                 interval={0}
               />
               <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
-              <Tooltip formatter={(v: number) => [`${v}`, 'Avg score']} />
+              <Tooltip formatter={(v) => [`${v ?? ''}`, 'Avg score']} />
               <Bar dataKey="avgScore" fill="#6366f1" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -126,7 +126,7 @@ export default function MetricsPage() {
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="date" tick={{ fontSize: 12 }} />
               <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
-              <Tooltip formatter={(v: number) => [`${v}`, 'Avg score']} />
+              <Tooltip formatter={(v) => [`${v ?? ''}`, 'Avg score']} />
               <Line type="monotone" dataKey="avgScore" stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} />
             </LineChart>
           </ResponsiveContainer>
