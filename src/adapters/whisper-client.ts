@@ -1,5 +1,4 @@
 import OpenAI from 'openai'
-import { Readable } from 'node:stream'
 import { env } from '@/env'
 import { AppError } from '@/types/errors'
 import { logger } from '@/utils/log'
@@ -10,24 +9,35 @@ function getClient(): OpenAI {
 
 export async function transcribe(input: {
   audio: Buffer
-  mimeType: 'audio/webm' | 'audio/mp4' | 'audio/wav'
+  mimeType: 'audio/webm' | 'audio/mp4' | 'audio/wav' | 'video/webm'
   prompt?: string
 }): Promise<{ text: string; confidence: number | null }> {
   const client = getClient()
 
-  const ext = input.mimeType === 'audio/webm' ? 'webm' : input.mimeType === 'audio/mp4' ? 'mp4' : 'wav'
+  const ext =
+    input.mimeType === 'audio/webm' || input.mimeType === 'video/webm'
+      ? 'webm'
+      : input.mimeType === 'audio/mp4'
+        ? 'mp4'
+        : 'wav'
+  // Whisper accepts webm container input — it reads the opus audio track,
+  // whether the container is tagged audio/webm or video/webm. We pass the
+  // audio-equivalent MIME so the provider doesn't reject on content-type.
+  const uploadType = input.mimeType === 'video/webm' ? 'audio/webm' : input.mimeType
 
   try {
-    const file = await OpenAI.toFile(
-      Readable.from(input.audio),
-      `audio.${ext}`,
-      { type: input.mimeType },
-    )
+    // Pass the Buffer directly so the SDK sets a precise content-length on the
+    // multipart part. Wrapping in Readable.from() hides the size, which in
+    // some environments produces a malformed upload that Whisper rejects as
+    // "Invalid file format".
+    const file = await OpenAI.toFile(input.audio, `audio.${ext}`, { type: uploadType })
 
     const result = await client.audio.transcriptions.create({
       model: 'whisper-1',
       file,
       response_format: 'json',
+      language: 'en',
+      temperature: 0,
       ...(input.prompt ? { prompt: input.prompt } : {}),
     })
 

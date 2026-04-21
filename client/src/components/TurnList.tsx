@@ -43,8 +43,25 @@ export default function TurnList({ turns }: TurnListProps) {
             {expandedVideos.has(turn.id) && (
               <video
                 controls
+                preload="metadata"
                 src={turn.videoUrl ?? undefined}
                 className="mt-2 max-w-md rounded border border-slate-200"
+                // MediaRecorder webm files ship without a Duration/Cues header,
+                // so Chrome reports duration === Infinity, can't seek, and
+                // renders a black first frame. Force a scan by seeking past the
+                // end; the browser recomputes duration, then we snap back to 0.
+                onLoadedMetadata={(e) => {
+                  const v = e.currentTarget
+                  if (!isFinite(v.duration)) {
+                    v.currentTime = 1e101
+                  }
+                }}
+                onDurationChange={(e) => {
+                  const v = e.currentTarget
+                  if (isFinite(v.duration) && v.currentTime > v.duration) {
+                    v.currentTime = 0
+                  }
+                }}
               />
             )}
           </div>

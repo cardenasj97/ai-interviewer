@@ -231,26 +231,30 @@ export function useInterviewSession(slug: string) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mic.blob])
 
-  // -- VideoMic blob ready → STT → video upload → submit --
+  // -- VideoMic blobs ready → STT (audio-only) → video upload → submit --
   useEffect(() => {
-    if (!videoEnabled || !videoMic.blob || state.phase !== 'listening') return
+    if (!videoEnabled || !videoMic.audioBlob || !videoMic.videoBlob || state.phase !== 'listening') return
 
-    const blob = videoMic.blob
+    const audioBlob = videoMic.audioBlob
+    const videoBlob = videoMic.videoBlob
     const durationMs = videoMic.durationMs
     const sessionId = sessionIdRef.current
     if (!sessionId) return
 
     dispatch({ type: 'AUDIO_READY' })
 
-    transcribeAudio(blob, { sessionId, mimeType: 'audio/webm', durationMs })
+    transcribeAudio(audioBlob, { sessionId, mimeType: 'audio/webm', durationMs })
       .then(async ({ text, confidence }) => {
         dispatch({ type: 'STT_DONE' })
         let videoUrl: string | undefined
         try {
-          const result = await uploadVideo(blob, { sessionId, turnClientId: crypto.randomUUID() })
+          const result = await uploadVideo(videoBlob, { sessionId, turnClientId: crypto.randomUUID() })
           videoUrl = result.videoUrl
-        } catch {
-          // Video upload failed; continue without video URL
+        } catch (uploadErr) {
+          // Don't fail the turn if the video upload errors — the transcript
+          // still submits — but surface the error so silent failures are
+          // visible in devtools.
+          console.warn('Video upload failed:', uploadErr)
         }
         submitMutation.mutate({ sessionId, text, sttConfidence: confidence ?? undefined, videoUrl })
       })
@@ -261,7 +265,7 @@ export function useInterviewSession(slug: string) {
       })
       .finally(() => videoMic.reset())
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [videoMic.blob])
+  }, [videoMic.audioBlob, videoMic.videoBlob])
 
   // -- Exposed handlers --
   const handleStartInterview = useCallback(() => {

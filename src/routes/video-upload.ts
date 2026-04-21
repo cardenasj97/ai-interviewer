@@ -11,7 +11,9 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: MAX_VIDEO_BYTES },
   fileFilter: (_req, file, cb) => {
-    if (!ALLOWED_MIMES.includes(file.mimetype)) {
+    // Strip codec params so "video/webm;codecs=vp8,opus" matches "video/webm".
+    const base = file.mimetype.split(';')[0]?.trim() ?? ''
+    if (!ALLOWED_MIMES.includes(base)) {
       cb(new AppError('VALIDATION_ERROR', `Unsupported video type: ${file.mimetype}`, 422))
       return
     }

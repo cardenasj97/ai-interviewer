@@ -2,10 +2,19 @@ import { ApiClientError } from './client'
 
 export async function transcribeAudio(
   blob: Blob,
-  meta: { sessionId: string; mimeType: 'audio/webm' | 'audio/mp4' | 'audio/wav'; durationMs: number },
+  meta: {
+    sessionId: string
+    mimeType: 'audio/webm' | 'audio/mp4' | 'audio/wav' | 'video/webm'
+    durationMs: number
+  },
 ): Promise<{ text: string; confidence: number | null }> {
+  // Re-wrap so the FormData part Content-Type is always the canonical mimeType
+  // (some MediaRecorder outputs include codec params or an empty type, which
+  // causes browsers to fall back to text/plain in multipart bodies).
+  const typedBlob = new Blob([blob], { type: meta.mimeType })
+  const ext = meta.mimeType === 'video/webm' ? 'webm' : meta.mimeType.split('/')[1]
   const form = new FormData()
-  form.append('audio', blob, `audio.${meta.mimeType.split('/')[1]}`)
+  form.append('audio', typedBlob, `audio.${ext}`)
   form.append('meta', JSON.stringify(meta))
 
   const res = await fetch('/api/v1/stt', {

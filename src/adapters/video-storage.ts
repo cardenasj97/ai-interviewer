@@ -20,7 +20,8 @@ export async function saveVideo(
   mimeType: string,
   sessionId: string,
 ): Promise<{ videoUrl: string }> {
-  const ext = MIME_TO_EXT[mimeType]
+  const baseMime = mimeType.split(';')[0]?.trim() ?? ''
+  const ext = MIME_TO_EXT[baseMime]
   if (!ext) {
     throw new AppError('VALIDATION_ERROR', 'Unsupported video MIME type', 422)
   }

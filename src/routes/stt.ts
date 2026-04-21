@@ -5,13 +5,16 @@ import { AppError } from '@/types/errors'
 import * as sttService from '@/services/stt-service'
 
 const MAX_AUDIO_BYTES = 5 * 1024 * 1024 // 5 MB
-const ALLOWED_MIMES = ['audio/webm', 'audio/mp4', 'audio/wav']
+const ALLOWED_MIMES = ['audio/webm', 'audio/mp4', 'audio/wav', 'video/webm']
 
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: MAX_AUDIO_BYTES },
   fileFilter: (_req, file, cb) => {
-    if (!ALLOWED_MIMES.includes(file.mimetype)) {
+    // Strip codec parameters (e.g. "video/webm;codecs=vp8,opus" → "video/webm")
+    // so the fileFilter compares against canonical MIME types.
+    const base = file.mimetype.split(';')[0]?.trim() ?? ''
+    if (!ALLOWED_MIMES.includes(base)) {
       cb(new AppError('AUDIO_UNSUPPORTED_TYPE', `Unsupported audio type: ${file.mimetype}`, 415))
       return
     }

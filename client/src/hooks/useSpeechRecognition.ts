@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { normalize } from "@ui/utils/stt-normalize";
 
 // Self-contained Web Speech API type definitions (not all browsers ship these in DOM lib yet)
 interface IWebSpeechRecognition extends EventTarget {
@@ -182,7 +183,7 @@ export function useSpeechRecognition(): SpeechRecognitionResult {
       finalsRef.current = "";
       setInterimTranscript((prevInterim) => {
         const effectiveInterim = prevInterim || fallbackInterim;
-        const combined = (finals + " " + effectiveInterim).trim();
+        const combined = normalize((finals + " " + effectiveInterim).trim());
         // eslint-disable-next-line no-console
         console.debug("[useSpeechRecognition] flush", {
           finals,

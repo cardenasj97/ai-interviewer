@@ -119,7 +119,7 @@ export default function InterviewRoomPage() {
           autoPlay
           muted
           playsInline
-          className="fixed top-16 right-4 z-50 w-40 rounded-lg border border-slate-200 shadow-lg"
+          className="fixed bottom-4 left-4 z-50 w-40 rounded-lg border border-slate-200 shadow-lg"
         />
       )}
 

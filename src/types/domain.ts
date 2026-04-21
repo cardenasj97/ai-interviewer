@@ -162,7 +162,12 @@ export const SubmitAnswerRequestSchema = z.object({
   text: NonEmptyStringSchema,
   sttConfidence: z.number().min(0).max(1).optional(),
   spokenDurationMs: z.number().int().min(0).max(300_000).optional(),
-  videoUrl: z.string().url().optional(),
+  // Accept either a fully-qualified URL or a server-relative path like
+  // "/uploads/videos/xxx.webm" (what we return when PUBLIC_BASE_URL is unset).
+  videoUrl: z.string().min(1).refine(
+    (v) => v.startsWith('/') || /^https?:\/\//.test(v),
+    { message: 'videoUrl must be an absolute URL or a server-relative path starting with /' },
+  ).optional(),
 })
 export type SubmitAnswerRequest = z.infer<typeof SubmitAnswerRequestSchema>
 
@@ -187,7 +192,7 @@ export const GetSessionResponseSchema = z.object({
 
 export const TranscribeRequestSchema = z.object({
   sessionId: IdSchema,
-  mimeType: z.enum(['audio/webm', 'audio/mp4', 'audio/wav']),
+  mimeType: z.enum(['audio/webm', 'audio/mp4', 'audio/wav', 'video/webm']),
   durationMs: z.number().int().min(0).max(120_000),
 })
 export type TranscribeRequest = z.infer<typeof TranscribeRequestSchema>
