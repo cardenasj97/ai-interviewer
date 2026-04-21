@@ -264,3 +264,55 @@ export type SessionMetrics = z.infer<typeof SessionMetricsSchema>
 export const GetSessionMetricsResponseSchema = z.object({
   data: SessionMetricsSchema,
 })
+
+// ---------- Gate 4 — History + Metrics ----------
+export const SessionHistoryItemSchema = z.object({
+  id: IdSchema,
+  jobTitle: z.string(),
+  jobSlug: z.string(),
+  completedAt: TimestampSchema,
+  durationSeconds: z.number().int(),
+  questionCount: z.number().int(),
+  overallScore: z.number().nullable(),
+  decisionSignal: z.enum(['strong_hire', 'hire', 'no_hire', 'strong_no_hire']).nullable(),
+})
+export type SessionHistoryItem = z.infer<typeof SessionHistoryItemSchema>
+
+export const SessionHistoryResponseSchema = z.object({
+  data: z.array(SessionHistoryItemSchema),
+  nextCursor: z.string().nullable(),
+})
+export type SessionHistoryResponse = z.infer<typeof SessionHistoryResponseSchema>
+
+export const MetricsSummarySchema = z.object({
+  totalSessions: z.number().int(),
+  completedSessions: z.number().int(),
+  abandonedSessions: z.number().int(),
+  avgOverallScore: z.number().nullable(),
+  competencyAverages: z.array(
+    z.object({
+      competency: z.string(),
+      avgScore: z.number(),
+      sampleCount: z.number().int(),
+    }),
+  ),
+  scoreTrend: z.array(
+    z.object({
+      completedAt: TimestampSchema,
+      overallScore: z.number(),
+    }),
+  ),
+})
+export type MetricsSummary = z.infer<typeof MetricsSummarySchema>
+
+export const MetricsResponseSchema = z.object({
+  data: MetricsSummarySchema,
+})
+export type MetricsResponse = z.infer<typeof MetricsResponseSchema>
+
+export const HistoryQuerySchema = z.object({
+  jobSlug: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+  cursor: z.string().optional(),
+})
+export type HistoryQuery = z.infer<typeof HistoryQuerySchema>
