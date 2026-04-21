@@ -67,8 +67,20 @@ describe('JobCard', () => {
 
   it('renders question pack preview when pack is provided', () => {
     const questionPack = [
-      { id: 'q1', category: 'behavioral' as const, prompt: 'Tell me about a challenge you overcame.' },
-      { id: 'q2', category: 'technical' as const, prompt: 'Explain closures in JavaScript.' },
+      {
+        id: 'q1',
+        category: 'behavioral' as const,
+        prompt: 'Tell me about a challenge you overcame.',
+        competency: 'collaboration',
+        order: 1,
+      },
+      {
+        id: 'q2',
+        category: 'technical' as const,
+        prompt: 'Explain closures in JavaScript.',
+        competency: 'javascript',
+        order: 2,
+      },
     ]
     renderCard(makeJob({ questionPack }))
     expect(screen.getByText(/topics you might be asked about/i)).toBeInTheDocument()

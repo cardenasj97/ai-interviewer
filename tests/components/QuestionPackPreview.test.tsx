@@ -6,14 +6,15 @@ import type { QuestionPack } from '@ui/api/jobs'
 function makeItem(
   id: string,
   prompt: string,
+  order: number,
   category: 'behavioral' | 'technical' | 'system-design' | 'situational' = 'behavioral',
 ) {
-  return { id, category, prompt }
+  return { id, category, prompt, competency: 'general', order }
 }
 
 function makePack(count: number): QuestionPack {
   return Array.from({ length: count }, (_, i) =>
-    makeItem(`q${i + 1}`, `Question ${i + 1}?`),
+    makeItem(`q${i + 1}`, `Question ${i + 1}?`, i + 1),
   )
 }
 
