@@ -1,9 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { listJobs } from '@ui/api/jobs'
+import { listJobs, type JobListItemWithPack } from '@ui/api/jobs'
 import JobCard from '@ui/components/JobCard'
 import ErrorBanner from '@ui/components/ErrorBanner'
 import { ApiClientError } from '@ui/api/client'
-import type { JobListItem } from '@/types/domain'
 
 function SkeletonCard() {
   return (
@@ -27,7 +26,7 @@ export default function JobListPage() {
     isError,
     error,
     refetch,
-  } = useQuery<JobListItem[], ApiClientError>({
+  } = useQuery<JobListItemWithPack[], ApiClientError>({
     queryKey: ['jobs'],
     queryFn: listJobs,
     staleTime: 5 * 60 * 1000,

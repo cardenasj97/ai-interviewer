@@ -1,9 +1,8 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import JobCard from '@ui/components/JobCard'
-import type { JobListItem } from '@/types/domain'
+import type { JobListItemWithPack } from '@ui/api/jobs'
 
 // @testing-library/user-event is not in devDeps, so use fireEvent instead
 import { fireEvent } from '@testing-library/react'
@@ -17,7 +16,7 @@ vi.mock('react-router-dom', async (importOriginal) => {
   }
 })
 
-function makeJob(overrides: Partial<JobListItem> = {}): JobListItem {
+function makeJob(overrides: Partial<JobListItemWithPack> = {}): JobListItemWithPack {
   return {
     id: '11111111-1111-4111-8111-111111111111',
     slug: 'frontend-engineer',
@@ -28,7 +27,7 @@ function makeJob(overrides: Partial<JobListItem> = {}): JobListItem {
   }
 }
 
-function renderCard(job: JobListItem) {
+function renderCard(job: JobListItemWithPack) {
   return render(
     <MemoryRouter>
       <JobCard job={job} />
@@ -64,5 +63,20 @@ describe('JobCard', () => {
       expect(screen.getByText(level)).toBeInTheDocument()
       unmount()
     }
+  })
+
+  it('renders question pack preview when pack is provided', () => {
+    const questionPack = [
+      { id: 'q1', category: 'behavioral' as const, prompt: 'Tell me about a challenge you overcame.' },
+      { id: 'q2', category: 'technical' as const, prompt: 'Explain closures in JavaScript.' },
+    ]
+    renderCard(makeJob({ questionPack }))
+    expect(screen.getByText(/topics you might be asked about/i)).toBeInTheDocument()
+    expect(screen.getByText('Tell me about a challenge you overcame.')).toBeInTheDocument()
+  })
+
+  it('renders nothing for question pack when pack is absent', () => {
+    renderCard(makeJob())
+    expect(screen.queryByText(/topics you might be asked about/i)).toBeNull()
   })
 })
