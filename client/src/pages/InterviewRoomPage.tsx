@@ -6,6 +6,7 @@ import MicButton from '@ui/components/MicButton'
 import DecisionPanel from '@ui/components/DecisionPanel'
 import MuteToggle from '@ui/components/MuteToggle'
 import ErrorBanner from '@ui/components/ErrorBanner'
+import VideoModeToggle from '@ui/components/VideoModeToggle'
 import { ApiClientError } from '@ui/api/client'
 
 function SkeletonRoom() {
@@ -24,6 +25,7 @@ export default function InterviewRoomPage() {
   const [showTextFallback, setShowTextFallback] = useState(false)
   const [tooShortHintVisible, setTooShortHintVisible] = useState(false)
   const tooShortTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const videoPreviewRef = useRef<HTMLVideoElement | null>(null)
 
   useEffect(() => {
     return () => {
@@ -40,6 +42,8 @@ export default function InterviewRoomPage() {
     isCreatingSession,
     isSubmitting,
     interimTranscript,
+    videoEnabled,
+    previewStream,
     handleStartInterview,
     handleMicStart,
     handleMicStop,
@@ -47,6 +51,11 @@ export default function InterviewRoomPage() {
     handleTextSubmit,
     handleRetry,
   } = useInterviewSession(slug ?? '')
+
+  useEffect(() => {
+    if (!videoPreviewRef.current) return
+    videoPreviewRef.current.srcObject = previewStream
+  }, [previewStream])
 
   const onTooShort = () => {
     handleMicTooShort()
@@ -91,6 +100,7 @@ export default function InterviewRoomPage() {
           <p className="text-xs text-slate-500 capitalize">{job.level} · {job.competencies.slice(0, 3).join(', ')}</p>
         </div>
         <div className="flex items-center gap-3">
+          <VideoModeToggle />
           <MuteToggle muted={synthesis.muted} onToggle={() => synthesis.setMuted(!synthesis.muted)} />
           <button
             type="button"
@@ -101,6 +111,17 @@ export default function InterviewRoomPage() {
           </button>
         </div>
       </div>
+
+      {/* Live video preview */}
+      {videoEnabled && previewStream && (
+        <video
+          ref={videoPreviewRef}
+          autoPlay
+          muted
+          playsInline
+          className="fixed top-16 right-4 z-50 w-40 rounded-lg border border-slate-200 shadow-lg"
+        />
+      )}
 
       {/* Error banner */}
       {phase === 'error' && errorCode && (
