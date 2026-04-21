@@ -6,7 +6,12 @@ interface MicButtonProps {
   state: MicState
   onStart: () => void
   onStop: () => void
+  onTooShort?: () => void
 }
+
+// Minimum hold duration before we treat a press as an intentional recording.
+// Anything shorter is treated as an accidental tap and discarded silently.
+const MIN_HOLD_MS = 500
 
 /**
  * Hold-to-record mic button.
@@ -22,18 +27,18 @@ interface MicButtonProps {
  * 'listening'. Without this separation, the button read "Recording — release
  * to send" the entire time a session was idle — misleading UX.
  */
-export default function MicButton({ state, onStart, onStop }: MicButtonProps) {
+export default function MicButton({ state, onStart, onStop, onTooShort }: MicButtonProps) {
   const canRecord = state === 'listening'
   const isDisabled = state === 'disabled'
   const [isHolding, setIsHolding] = useState(false)
   const isHoldingRef = useRef(false)
+  const holdStartAtRef = useRef<number>(0)
 
   const beginHold = () => {
     if (!canRecord || isHoldingRef.current) return
+    holdStartAtRef.current = Date.now()
     isHoldingRef.current = true
     setIsHolding(true)
-    // eslint-disable-next-line no-console
-    console.log('[MicButton] onStart — beginning hold')
     onStart()
   }
 
@@ -41,8 +46,11 @@ export default function MicButton({ state, onStart, onStop }: MicButtonProps) {
     if (!isHoldingRef.current) return
     isHoldingRef.current = false
     setIsHolding(false)
-    // eslint-disable-next-line no-console
-    console.log('[MicButton] onStop — releasing hold')
+    const heldMs = Date.now() - holdStartAtRef.current
+    if (heldMs < MIN_HOLD_MS) {
+      onTooShort?.()
+      return
+    }
     onStop()
   }
 

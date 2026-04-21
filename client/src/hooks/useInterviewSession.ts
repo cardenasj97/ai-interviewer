@@ -11,6 +11,15 @@ import { interviewReducer, initialState } from '@ui/state/interview-reducer'
 import { ApiClientError } from '@ui/api/client'
 import type { Job } from '@/types/domain'
 
+// Short pause after the AI finishes speaking before the mic goes live. Gives
+// the user a beat to gather their thoughts rather than jumping straight into
+// "your turn, go!" the instant TTS ends.
+const POST_TTS_GAP_MS = 800
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 function sessionKey(slug: string) {
   return `aq_session_${slug}`
 }
@@ -51,6 +60,7 @@ export function useInterviewSession(slug: string) {
       safeSetStorage(sessionKey(slug), session.id)
       dispatch({ type: 'SESSION_CREATED', sessionId: session.id, firstTurn })
       await synthesis.speak(firstTurn.text)
+      await delay(POST_TTS_GAP_MS)
       dispatch({ type: 'MIC_GRANTED' })
     },
     onError: (err) => {
@@ -79,6 +89,7 @@ export function useInterviewSession(slug: string) {
       } else if (nextInterviewerTurn) {
         dispatch({ type: 'ANSWER_ACCEPTED', candidateTurn, nextTurn: nextInterviewerTurn, decisionSignal })
         await synthesis.speak(nextInterviewerTurn.text)
+        await delay(POST_TTS_GAP_MS)
         dispatch({ type: 'TTS_ENDED' })
       }
     },
@@ -159,7 +170,16 @@ export function useInterviewSession(slug: string) {
     if (recognition.error === 'MIC_DENIED') {
       dispatch({ type: 'MIC_DENIED' })
     } else {
-      dispatch({ type: 'FAILED', code: recognition.error, message: 'Speech recognition failed' })
+      // useSpeechRecognition may report `STT_PROVIDER_ERROR:<reason>` where
+      // <reason> is the raw Web Speech event code (e.g. "network",
+      // "audio-capture"). Split so the banner maps via copy but we still
+      // surface the raw reason in the dev detail line.
+      const [code, detail] = recognition.error.split(':')
+      dispatch({
+        type: 'FAILED',
+        code: code ?? 'STT_PROVIDER_ERROR',
+        message: detail ? `Speech recognition failed: ${detail}` : 'Speech recognition failed',
+      })
     }
     recognition.reset()
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -221,18 +241,32 @@ export function useInterviewSession(slug: string) {
   }, [state.phase, recognition, mic])
 
   const handleMicStop = useCallback(() => {
-    if (state.phase !== 'listening') return
+    // No phase guard: if the user releases, we must always route the stop
+    // through so the underlying recognition/recorder fires its onend and
+    // flushes the transcript. Skipping this leaves recognition running
+    // forever and the user's speech is never submitted.
     if (recognition.isSupported) {
       recognition.stop()
     } else {
       mic.stop()
     }
-  }, [state.phase, recognition, mic])
+  }, [recognition, mic])
+
+  // Called when the user pressed+released the mic too quickly (accidental tap).
+  // Discard the in-progress recording silently — no error banner, no STT call.
+  const handleMicTooShort = useCallback(() => {
+    if (recognition.isSupported) {
+      recognition.cancel()
+    } else {
+      mic.cancel()
+    }
+  }, [recognition, mic])
 
   const handleTextSubmit = useCallback(
     (text: string) => {
       const sessionId = sessionIdRef.current
-      if (!sessionId || state.phase !== 'listening') return
+      if (!sessionId) return
+      if (state.phase !== 'listening' && state.phase !== 'error') return
       dispatch({ type: 'AUDIO_READY' })
       dispatch({ type: 'STT_DONE' })
       submitMutation.mutate({ sessionId, text })
@@ -256,6 +290,7 @@ export function useInterviewSession(slug: string) {
     handleStartInterview,
     handleMicStart,
     handleMicStop,
+    handleMicTooShort,
     handleTextSubmit,
     handleRetry,
   }

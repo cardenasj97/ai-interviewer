@@ -32,9 +32,20 @@ export async function transcribe(input: {
     return { text: result.text, confidence: null }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
-    logger.warn({ err }, 'Whisper provider error')
+    const status = (err as { status?: number })?.status
+    logger.warn(
+      {
+        err,
+        providerMessage: msg,
+        providerStatus: status,
+        mimeType: input.mimeType,
+        audioBytes: input.audio.length,
+      },
+      'Whisper provider error',
+    )
     throw new AppError('STT_PROVIDER_ERROR', `STT provider error: ${msg}`, 502, {
       providerMessage: msg,
+      providerStatus: status,
     })
   }
 }

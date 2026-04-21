@@ -11,10 +11,13 @@ export interface MicResult {
   error: string | null
   start: () => Promise<void>
   stop: () => void
+  cancel: () => void
   reset: () => void
 }
 
 const MAX_DURATION_MS = 120_000
+// Keep recording a beat after release so the user's last syllable isn't clipped.
+const TAIL_DEBOUNCE_MS = 400
 
 const SUPPORTED_MIME = (() => {
   if (typeof MediaRecorder === 'undefined') return 'audio/webm'
@@ -37,12 +40,15 @@ export function useMic(): MicResult {
   const chunksRef = useRef<Blob[]>([])
   const startTimeRef = useRef<number>(0)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const tailTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const cancelledRef = useRef(false)
 
   const start = useCallback(async () => {
     setError(null)
     setBlob(null)
     chunksRef.current = []
+    cancelledRef.current = false
 
     setPermission('requesting')
     let stream: MediaStream
@@ -66,10 +72,15 @@ export function useMic(): MicResult {
     recorder.onstop = () => {
       const duration = Date.now() - startTimeRef.current
       setDurationMs(duration)
+      stream.getTracks().forEach((t) => t.stop())
+      if (cancelledRef.current) {
+        chunksRef.current = []
+        setRecording('idle')
+        return
+      }
       const result = new Blob(chunksRef.current, { type: SUPPORTED_MIME })
       setBlob(result)
       setRecording('done')
-      stream.getTracks().forEach((t) => t.stop())
     }
 
     recorder.start(250)
@@ -86,9 +97,26 @@ export function useMic(): MicResult {
 
   const stop = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    if (tailTimeoutRef.current) clearTimeout(tailTimeoutRef.current)
+    if (recorderRef.current?.state !== 'recording') return
+    setRecording('stopping')
+    tailTimeoutRef.current = setTimeout(() => {
+      if (recorderRef.current?.state === 'recording') {
+        recorderRef.current.stop()
+      }
+    }, TAIL_DEBOUNCE_MS)
+  }, [])
+
+  const cancel = useCallback(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    if (tailTimeoutRef.current) clearTimeout(tailTimeoutRef.current)
+    cancelledRef.current = true
+    chunksRef.current = []
     if (recorderRef.current?.state === 'recording') {
-      setRecording('stopping')
       recorderRef.current.stop()
+    } else {
+      streamRef.current?.getTracks().forEach((t) => t.stop())
+      setRecording('idle')
     }
   }, [])
 
@@ -99,5 +127,5 @@ export function useMic(): MicResult {
     setError(null)
   }, [])
 
-  return { permission, recording, blob, durationMs, error, start, stop, reset }
+  return { permission, recording, blob, durationMs, error, start, stop, cancel, reset }
 }

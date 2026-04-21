@@ -70,8 +70,8 @@ export function interviewReducer(state: InterviewState, action: InterviewAction)
       }
 
     case 'AUDIO_READY':
-      if (state.phase !== 'listening') return state
-      return { ...state, phase: 'transcribing' }
+      if (state.phase !== 'listening' && state.phase !== 'error') return state
+      return { ...state, phase: 'transcribing', errorCode: null, errorMessage: null }
 
     case 'STT_DONE':
       if (state.phase !== 'transcribing') return state

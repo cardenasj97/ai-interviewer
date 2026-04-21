@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useInterviewSession } from '@ui/hooks/useInterviewSession'
 import TranscriptPane from '@ui/components/TranscriptPane'
@@ -22,6 +22,14 @@ export default function InterviewRoomPage() {
   const navigate = useNavigate()
   const [textInput, setTextInput] = useState('')
   const [showTextFallback, setShowTextFallback] = useState(false)
+  const [tooShortHintVisible, setTooShortHintVisible] = useState(false)
+  const tooShortTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (tooShortTimerRef.current) clearTimeout(tooShortTimerRef.current)
+    }
+  }, [])
 
   const {
     state,
@@ -35,9 +43,17 @@ export default function InterviewRoomPage() {
     handleStartInterview,
     handleMicStart,
     handleMicStop,
+    handleMicTooShort,
     handleTextSubmit,
     handleRetry,
   } = useInterviewSession(slug ?? '')
+
+  const onTooShort = () => {
+    handleMicTooShort()
+    setTooShortHintVisible(true)
+    if (tooShortTimerRef.current) clearTimeout(tooShortTimerRef.current)
+    tooShortTimerRef.current = setTimeout(() => setTooShortHintVisible(false), 2000)
+  }
 
   if (isJobLoading) return <SkeletonRoom />
 
@@ -91,6 +107,7 @@ export default function InterviewRoomPage() {
         <div className="px-6 pt-4">
           <ErrorBanner
             code={errorCode}
+            devDetail={errorMessage}
             onRetry={handleRetry}
             onBack={errorCode === 'JOB_NOT_FOUND' ? () => navigate('/') : undefined}
           />
@@ -160,6 +177,7 @@ export default function InterviewRoomPage() {
                   }
                   onStart={handleMicStart}
                   onStop={handleMicStop}
+                  onTooShort={onTooShort}
                 />
               )}
 
@@ -172,6 +190,12 @@ export default function InterviewRoomPage() {
               <p className="text-xs text-slate-400">
                 Hold mic button or hold <kbd className="rounded bg-slate-100 px-1">Space</kbd> to record
               </p>
+
+              {tooShortHintVisible && (
+                <p role="status" className="text-xs text-amber-600">
+                  Hold a bit longer to record your answer.
+                </p>
+              )}
 
               {/* Text fallback */}
               {(showTextFallback || phase === 'error') && (
@@ -187,7 +211,6 @@ export default function InterviewRoomPage() {
                         handleTextSubmit(textInput.trim())
                         setTextInput('')
                         setShowTextFallback(false)
-                        handleRetry()
                       }
                     }}
                     className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
@@ -199,7 +222,6 @@ export default function InterviewRoomPage() {
                         handleTextSubmit(textInput.trim())
                         setTextInput('')
                         setShowTextFallback(false)
-                        handleRetry()
                       }
                     }}
                     className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
