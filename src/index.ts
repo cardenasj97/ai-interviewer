@@ -29,6 +29,8 @@ export function createApp(): express.Express {
 
   app.use('/api/v1', apiRouter)
 
+  app.use('/uploads', express.static('./uploads'))
+
   // Serve built client in production
   if (env.NODE_ENV === 'production') {
     const clientDist = path.resolve(process.cwd(), 'client/dist')
