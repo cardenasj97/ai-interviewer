@@ -1,8 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getSession } from '@ui/api/sessions'
-import EvaluationCard from '@ui/components/EvaluationCard'
-import TranscriptPane from '@ui/components/TranscriptPane'
+import EvaluationSummary from '@ui/components/EvaluationSummary'
+import TurnList from '@ui/components/TurnList'
 import DecisionPanel from '@ui/components/DecisionPanel'
 import ErrorBanner from '@ui/components/ErrorBanner'
 import { ApiClientError } from '@ui/api/client'
@@ -88,16 +88,11 @@ export default function ResultsPage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          {/* Evaluation card */}
-          <EvaluationCard evaluation={evaluation} />
+          {/* Evaluation summary */}
+          <EvaluationSummary evaluation={evaluation} />
 
           {/* Full transcript */}
-          <section>
-            <h2 className="mb-3 text-lg font-semibold text-slate-700">Full Transcript</h2>
-            <div className="rounded-xl border border-slate-100 bg-white p-4">
-              <TranscriptPane turns={turns} />
-            </div>
-          </section>
+          <TurnList turns={turns} />
 
           {/* Decision signal history */}
           {decisionSignals.length > 0 && (
