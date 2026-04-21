@@ -162,7 +162,7 @@ export const SubmitAnswerRequestSchema = z.object({
   text: NonEmptyStringSchema,
   sttConfidence: z.number().min(0).max(1).optional(),
   spokenDurationMs: z.number().int().min(0).max(300_000).optional(),
-  videoUrl: z.string().url().nullable().optional(),
+  videoUrl: z.string().url().optional(),
 })
 export type SubmitAnswerRequest = z.infer<typeof SubmitAnswerRequestSchema>
 

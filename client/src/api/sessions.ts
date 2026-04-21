@@ -27,7 +27,7 @@ export function getSession(id: string): Promise<{
 export function submitAnswer(
   id: string,
   text: string,
-  extra: { sttConfidence?: number; spokenDurationMs?: number } = {},
+  extra: { sttConfidence?: number; spokenDurationMs?: number; videoUrl?: string } = {},
 ): Promise<{
   candidateTurn: Turn
   nextInterviewerTurn: Turn | null

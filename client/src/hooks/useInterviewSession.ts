@@ -4,9 +4,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getJob } from '@ui/api/jobs'
 import { createSession, getSession, submitAnswer, abandonSession } from '@ui/api/sessions'
 import { transcribeAudio } from '@ui/api/stt'
+import { uploadVideo } from '@ui/api/video'
 import { useSpeechSynthesis } from './useSpeechSynthesis'
 import { useSpeechRecognition } from './useSpeechRecognition'
 import { useMic, mimeType as micMimeType } from './useMic'
+import { useVideoMic } from './useVideoMic'
+import { useVideoModeEnabled } from './useVideoModeEnabled'
 import { interviewReducer, initialState } from '@ui/state/interview-reducer'
 import { ApiClientError } from '@ui/api/client'
 import type { Job } from '@/types/domain'
@@ -41,6 +44,8 @@ export function useInterviewSession(slug: string) {
   const synthesis = useSpeechSynthesis()
   const recognition = useSpeechRecognition()
   const mic = useMic()
+  const { videoEnabled } = useVideoModeEnabled()
+  const videoMic = useVideoMic()
 
   // Stable reference for state.sessionId used in async callbacks
   const sessionIdRef = useRef<string | null>(null)
@@ -77,11 +82,13 @@ export function useInterviewSession(slug: string) {
       sessionId,
       text,
       sttConfidence,
+      videoUrl,
     }: {
       sessionId: string
       text: string
       sttConfidence?: number
-    }) => submitAnswer(sessionId, text, { sttConfidence }),
+      videoUrl?: string
+    }) => submitAnswer(sessionId, text, { sttConfidence, videoUrl }),
     onSuccess: async ({ candidateTurn, nextInterviewerTurn, evaluation, decisionSignal }, variables) => {
       if (evaluation) {
         dispatch({ type: 'FINISHED', candidateTurn, evaluation, decisionSignal })
@@ -153,6 +160,17 @@ export function useInterviewSession(slug: string) {
     }
   }, [mic.permission, state.phase])
 
+  // -- VideoMic permission state → reducer --
+  useEffect(() => {
+    if (!videoEnabled) return
+    if (state.phase !== 'requestingMic') return
+    if (videoMic.permission === 'denied') {
+      dispatch({ type: 'MIC_DENIED' })
+    } else if (videoMic.permission === 'granted') {
+      dispatch({ type: 'MIC_GRANTED' })
+    }
+  }, [videoEnabled, videoMic.permission, state.phase])
+
   // -- Web Speech API final transcript --
   useEffect(() => {
     if (!recognition.transcript) return
@@ -213,6 +231,38 @@ export function useInterviewSession(slug: string) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mic.blob])
 
+  // -- VideoMic blob ready → STT → video upload → submit --
+  useEffect(() => {
+    if (!videoEnabled || !videoMic.blob || state.phase !== 'listening') return
+
+    const blob = videoMic.blob
+    const durationMs = videoMic.durationMs
+    const sessionId = sessionIdRef.current
+    if (!sessionId) return
+
+    dispatch({ type: 'AUDIO_READY' })
+
+    transcribeAudio(blob, { sessionId, mimeType: 'audio/webm', durationMs })
+      .then(async ({ text, confidence }) => {
+        dispatch({ type: 'STT_DONE' })
+        let videoUrl: string | undefined
+        try {
+          const result = await uploadVideo(blob, { sessionId, turnClientId: crypto.randomUUID() })
+          videoUrl = result.videoUrl
+        } catch {
+          // Video upload failed; continue without video URL
+        }
+        submitMutation.mutate({ sessionId, text, sttConfidence: confidence ?? undefined, videoUrl })
+      })
+      .catch((err) => {
+        const code = err instanceof ApiClientError ? err.code : 'STT_PROVIDER_ERROR'
+        const message = err instanceof Error ? err.message : 'Transcription failed'
+        dispatch({ type: 'FAILED', code, message })
+      })
+      .finally(() => videoMic.reset())
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videoMic.blob])
+
   // -- Exposed handlers --
   const handleStartInterview = useCallback(() => {
     if (!job) return
@@ -220,7 +270,10 @@ export function useInterviewSession(slug: string) {
     if (state.sessionId) {
       // Rehydrated — just request mic
       dispatch({ type: 'START' })
-      if (recognition.isSupported) {
+      if (videoEnabled) {
+        videoMic.start()
+        // Permission result handled by videoMic.permission effect above
+      } else if (recognition.isSupported) {
         recognition.start()
         dispatch({ type: 'MIC_GRANTED' })
       } else {
@@ -232,38 +285,44 @@ export function useInterviewSession(slug: string) {
       dispatch({ type: 'START' })
       createMutation.mutate(job.id)
     }
-  }, [job, state.sessionId, recognition, mic, createMutation])
+  }, [job, state.sessionId, videoEnabled, videoMic, recognition, mic, createMutation])
 
   const handleMicStart = useCallback(() => {
     if (state.phase !== 'listening') return
-    if (recognition.isSupported) {
+    if (videoEnabled) {
+      videoMic.start()
+    } else if (recognition.isSupported) {
       recognition.start()
     } else {
       mic.start()
     }
-  }, [state.phase, recognition, mic])
+  }, [state.phase, videoEnabled, videoMic, recognition, mic])
 
   const handleMicStop = useCallback(() => {
     // No phase guard: if the user releases, we must always route the stop
     // through so the underlying recognition/recorder fires its onend and
     // flushes the transcript. Skipping this leaves recognition running
     // forever and the user's speech is never submitted.
-    if (recognition.isSupported) {
+    if (videoEnabled) {
+      videoMic.stop()
+    } else if (recognition.isSupported) {
       recognition.stop()
     } else {
       mic.stop()
     }
-  }, [recognition, mic])
+  }, [videoEnabled, videoMic, recognition, mic])
 
   // Called when the user pressed+released the mic too quickly (accidental tap).
   // Discard the in-progress recording silently — no error banner, no STT call.
   const handleMicTooShort = useCallback(() => {
-    if (recognition.isSupported) {
+    if (videoEnabled) {
+      videoMic.cancel()
+    } else if (recognition.isSupported) {
       recognition.cancel()
     } else {
       mic.cancel()
     }
-  }, [recognition, mic])
+  }, [videoEnabled, videoMic, recognition, mic])
 
   const handleTextSubmit = useCallback(
     (text: string) => {
@@ -290,6 +349,8 @@ export function useInterviewSession(slug: string) {
     isCreatingSession: createMutation.isPending,
     isSubmitting: submitMutation.isPending,
     interimTranscript: recognition.interimTranscript,
+    videoEnabled,
+    previewStream: videoMic.previewStream,
     handleStartInterview,
     handleMicStart,
     handleMicStop,
