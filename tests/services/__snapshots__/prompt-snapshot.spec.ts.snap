@@ -21,6 +21,12 @@ As a Frontend Engineer you will own a customer-facing web app end-to-end — arc
 - Follow-up questions asked: 0
 - Maximum questions allowed: 8
 
+## Approved Opener Questions
+For your next non-follow-up question, prefer questions from this list (in order). Set sourceQuestionId to the chosen question's id.
+For follow-up questions, you may ask anything relevant to the candidate's last answer — leave sourceQuestionId null.
+
+  1. [fe-tech-typed-forms] (technical / TypeScript) Walk me through how you would build a type-safe form with validation.
+
 ## Instructions
 Respond with a JSON object matching the NextQuestionOutput schema.
 Assess each competency based on what you have heard so far.
