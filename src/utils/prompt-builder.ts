@@ -14,6 +14,21 @@ export function buildNextQuestionMessages(input: NextQuestionPromptInput): ChatM
     .map((c, i) => `  ${i + 1}. ${c}`)
     .join('\n')
 
+  const askedSourceIds = new Set(
+    transcript
+      .filter((t) => t.role === 'interviewer' && t.sourceQuestionId != null)
+      .map((t) => t.sourceQuestionId!),
+  )
+
+  const unaskedPackQuestions = job.questionPack
+    .filter((q) => !askedSourceIds.has(q.id))
+    .sort((a, b) => a.order - b.order)
+
+  const packSection =
+    unaskedPackQuestions.length > 0
+      ? `\n\n## Approved Opener Questions\nFor your next non-follow-up question, prefer questions from this list (in order). Set sourceQuestionId to the chosen question's id.\nFor follow-up questions, you may ask anything relevant to the candidate's last answer — leave sourceQuestionId null.\n\n${unaskedPackQuestions.map((q, i) => `  ${i + 1}. [${q.id}] (${q.category} / ${q.competency}) ${q.prompt}`).join('\n')}`
+      : ''
+
   const system = `You are a senior hiring manager conducting a structured job interview for a ${job.title} (${job.level}) role. \
 Be warm but rigorous. Ask exactly one question at a time — no multi-part questions.
 
@@ -26,7 +41,7 @@ ${competencyList}
 ## Interview State
 - Questions asked so far: ${session.questionsAsked}
 - Follow-up questions asked: ${session.followUpsAsked}
-- Maximum questions allowed: ${session.maxQuestions}
+- Maximum questions allowed: ${session.maxQuestions}${packSection}
 
 ## Instructions
 Respond with a JSON object matching the NextQuestionOutput schema.

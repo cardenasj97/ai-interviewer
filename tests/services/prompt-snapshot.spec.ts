@@ -2,6 +2,14 @@ import { describe, it, expect } from 'vitest'
 import type { InterviewSession, Job, Turn } from '@/types/domain'
 import { buildNextQuestionMessages } from '@/utils/prompt-builder'
 
+const packQuestion = {
+  id: 'fe-tech-typed-forms',
+  category: 'technical' as const,
+  prompt: 'Walk me through how you would build a type-safe form with validation.',
+  competency: 'TypeScript',
+  order: 1,
+}
+
 const seedFrontendEngineer: Job = {
   id: '11111111-1111-4111-8111-111111111111',
   slug: 'frontend-engineer',
@@ -18,13 +26,7 @@ const seedFrontendEngineer: Job = {
     'Testing',
     'Performance',
   ],
-  questionPack: [
-    {
-      id: 'fe-tech-typed-forms',
-      category: 'technical',
-      prompt: 'Walk me through how you would build a type-safe form with validation.',
-    },
-  ],
+  questionPack: [packQuestion],
   createdAt: '2026-04-21T00:00:00.000Z',
   updatedAt: '2026-04-21T00:00:00.000Z',
 }
@@ -113,5 +115,83 @@ describe('buildNextQuestionMessages snapshot', () => {
     for (const turn of fixedTurns) {
       expect(messages[1]!.content).toContain(turn.text)
     }
+  })
+})
+
+describe('buildNextQuestionMessages — question pack injection', () => {
+  it('includes Approved Opener Questions section when pack has unasked items', () => {
+    const messages = buildNextQuestionMessages({
+      job: seedFrontendEngineer,
+      session: baseSession,
+      transcript: fixedTurns,
+    })
+    expect(messages[0]!.content).toContain('## Approved Opener Questions')
+    expect(messages[0]!.content).toContain(packQuestion.id)
+    expect(messages[0]!.content).toContain(packQuestion.prompt)
+    expect(messages[0]!.content).toContain(packQuestion.competency)
+  })
+
+  it('filters out already-asked pack questions by sourceQuestionId', () => {
+    const turnsWithAskedPack: Turn[] = [
+      {
+        id: 't1',
+        sessionId: baseSession.id,
+        role: 'interviewer',
+        index: 1,
+        text: 'Walk me through how you would build a type-safe form with validation.',
+        questionKind: 'primary',
+        sttConfidence: null,
+        audioUrl: null,
+        sourceQuestionId: 'fe-tech-typed-forms',
+        spokenDurationMs: null,
+        createdAt: '2026-04-21T00:00:00.000Z',
+      },
+      {
+        id: 't2',
+        sessionId: baseSession.id,
+        role: 'candidate',
+        index: 2,
+        text: 'I use React Hook Form with Zod for validation.',
+        questionKind: null,
+        sttConfidence: 0.9,
+        audioUrl: null,
+        sourceQuestionId: null,
+        spokenDurationMs: 6000,
+        createdAt: '2026-04-21T00:02:00.000Z',
+      },
+    ]
+
+    const messages = buildNextQuestionMessages({
+      job: seedFrontendEngineer,
+      session: baseSession,
+      transcript: turnsWithAskedPack,
+    })
+
+    expect(messages[0]!.content).not.toContain('fe-tech-typed-forms')
+    expect(messages[0]!.content).not.toContain('## Approved Opener Questions')
+  })
+
+  it('omits Approved Opener Questions section when questionPack is empty', () => {
+    const jobWithNoPack: Job = { ...seedFrontendEngineer, questionPack: [] }
+
+    const messages = buildNextQuestionMessages({
+      job: jobWithNoPack,
+      session: baseSession,
+      transcript: fixedTurns,
+    })
+
+    expect(messages[0]!.content).not.toContain('## Approved Opener Questions')
+  })
+
+  it('does not crash and generates a valid prompt when questionPack is empty', () => {
+    const jobWithNoPack: Job = { ...seedFrontendEngineer, questionPack: [] }
+
+    expect(() =>
+      buildNextQuestionMessages({
+        job: jobWithNoPack,
+        session: baseSession,
+        transcript: fixedTurns,
+      }),
+    ).not.toThrow()
   })
 })

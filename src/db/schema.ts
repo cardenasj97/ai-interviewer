@@ -24,7 +24,7 @@ export const jobs = pgTable(
     level: text('level', { enum: ['junior', 'mid', 'senior', 'staff'] }).notNull(),
     competencies: jsonb('competencies').$type<string[]>().notNull(),
     questionPack: jsonb('question_pack')
-      .$type<{ id: string; category: string; prompt: string }[]>()
+      .$type<{ id: string; category: string; prompt: string; competency: string; order: number }[]>()
       .notNull()
       .default(sql`'[]'::jsonb`),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

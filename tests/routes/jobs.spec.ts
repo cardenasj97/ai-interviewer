@@ -23,7 +23,15 @@ const mockJob: Job = {
   ...mockListItem,
   longDescription: 'You will own the web app end-to-end...',
   competencies: ['React', 'TypeScript', 'Accessibility (a11y)'],
-  questionPack: [],
+  questionPack: [
+    {
+      id: 'fe-tech-typed-forms',
+      category: 'technical',
+      prompt: 'Walk me through how you would build a type-safe form with validation.',
+      competency: 'TypeScript',
+      order: 1,
+    },
+  ],
   createdAt: '2026-04-21T00:00:00.000Z',
   updatedAt: '2026-04-21T00:00:00.000Z',
 }
@@ -92,5 +100,22 @@ describe('GET /api/v1/jobs/:slug', () => {
     const res = await request(app).get('/api/v1/jobs/INVALID_SLUG')
     expect(res.status).toBe(400)
     expect(res.body.error.code).toBe('VALIDATION_ERROR')
+  })
+
+  it('exposes questionPack with id, category, prompt, competency, order fields', async () => {
+    vi.mocked(jobService.getJob).mockResolvedValue(mockJob)
+    const app = createApp()
+    const res = await request(app).get('/api/v1/jobs/frontend-engineer')
+    expect(res.status).toBe(200)
+    expect(res.body.data.questionPack).toBeInstanceOf(Array)
+    expect(res.body.data.questionPack.length).toBeGreaterThan(0)
+    const item = res.body.data.questionPack[0]
+    expect(item).toMatchObject({
+      id: 'fe-tech-typed-forms',
+      category: 'technical',
+      prompt: expect.stringContaining('type-safe form'),
+      competency: 'TypeScript',
+      order: 1,
+    })
   })
 })

@@ -16,6 +16,15 @@ export type Locale = z.infer<typeof LocaleSchema>
 export const JobLevelSchema = z.enum(['junior', 'mid', 'senior', 'staff'])
 export type JobLevel = z.infer<typeof JobLevelSchema>
 
+export const QuestionPackItemSchema = z.object({
+  id: z.string().min(1).max(80),
+  category: z.enum(['behavioral', 'technical', 'system-design', 'situational']),
+  prompt: z.string().min(1).max(500),
+  competency: z.string().min(1).max(80),
+  order: z.number().int().min(1),
+})
+export type QuestionPackItem = z.infer<typeof QuestionPackItemSchema>
+
 export const JobSchema = z.object({
   id: IdSchema,
   slug: z.string().min(1).max(80).regex(/^[a-z0-9-]+$/),
@@ -24,15 +33,7 @@ export const JobSchema = z.object({
   longDescription: z.string().min(1).max(2000),
   level: JobLevelSchema,
   competencies: z.array(z.string().min(1).max(80)).min(3).max(12),
-  questionPack: z
-    .array(
-      z.object({
-        id: z.string().min(1).max(80),
-        category: z.enum(['behavioral', 'technical', 'system-design', 'situational']),
-        prompt: z.string().min(1).max(500),
-      }),
-    )
-    .default([]),
+  questionPack: z.array(QuestionPackItemSchema).default([]),
   createdAt: TimestampSchema,
   updatedAt: TimestampSchema,
 })
