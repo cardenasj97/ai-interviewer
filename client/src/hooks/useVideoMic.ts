@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import fixWebmDuration from 'fix-webm-duration'
 import type { MicPermission, RecordingState } from './useMic'
 
 const MAX_DURATION_MS = 120_000
@@ -63,7 +62,7 @@ export function useVideoMic(): VideoMicResult {
     }
   }, [])
 
-  const finalizeIfReady = useCallback(async () => {
+  const finalizeIfReady = useCallback(() => {
     if (!videoDoneRef.current || !audioDoneRef.current) return
     if (cancelledRef.current) {
       videoChunksRef.current = []
@@ -71,12 +70,11 @@ export function useVideoMic(): VideoMicResult {
       setRecording('idle')
       return
     }
-    const duration = Date.now() - startTimeRef.current
-    const rawVideo = new Blob(videoChunksRef.current, { type: SUPPORTED_VIDEO_MIME })
-    // MediaRecorder webm has no Duration element in its EBML header, which
-    // causes <video> to report duration=Infinity, refuse to seek, and render
-    // a black first frame. fix-webm-duration patches the header in place.
-    const video = await fixWebmDuration(rawVideo, duration, { logger: false })
+    // Deliver MediaRecorder output untouched. Header-patching libraries
+    // (e.g. fix-webm-duration) shift the Info element without updating the
+    // SeekHead offsets, which breaks Chrome's FFmpegDemuxer. Duration=Infinity
+    // on playback is handled at the <video> element with a seek trick.
+    const video = new Blob(videoChunksRef.current, { type: SUPPORTED_VIDEO_MIME })
     const audio = new Blob(audioChunksRef.current, { type: SUPPORTED_AUDIO_MIME })
     setVideoBlob(video)
     setAudioBlob(audio)

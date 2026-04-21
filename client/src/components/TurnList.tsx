@@ -41,28 +41,53 @@ export default function TurnList({ turns }: TurnListProps) {
               {expandedVideos.has(turn.id) ? 'Hide video' : 'Show video'}
             </button>
             {expandedVideos.has(turn.id) && (
-              <video
-                controls
-                preload="metadata"
-                src={turn.videoUrl ?? undefined}
-                className="mt-2 max-w-md rounded border border-slate-200"
-                // MediaRecorder webm files ship without a Duration/Cues header,
-                // so Chrome reports duration === Infinity, can't seek, and
-                // renders a black first frame. Force a scan by seeking past the
-                // end; the browser recomputes duration, then we snap back to 0.
-                onLoadedMetadata={(e) => {
-                  const v = e.currentTarget
-                  if (!isFinite(v.duration)) {
-                    v.currentTime = 1e101
-                  }
-                }}
-                onDurationChange={(e) => {
-                  const v = e.currentTarget
-                  if (isFinite(v.duration) && v.currentTime > v.duration) {
-                    v.currentTime = 0
-                  }
-                }}
-              />
+              <div className="mt-2">
+                <video
+                  controls
+                  playsInline
+                  preload="auto"
+                  src={turn.videoUrl ?? undefined}
+                  className="max-w-md rounded border border-slate-200"
+                  onError={(e) => {
+                    const v = e.currentTarget
+                    console.warn('[video] element error', {
+                      url: turn.videoUrl,
+                      code: v.error?.code,
+                      message: v.error?.message,
+                      networkState: v.networkState,
+                      readyState: v.readyState,
+                    })
+                  }}
+                  onLoadedMetadata={(e) => {
+                    const v = e.currentTarget
+                    console.info('[video] loadedmetadata', {
+                      url: turn.videoUrl,
+                      duration: v.duration,
+                      videoWidth: v.videoWidth,
+                      videoHeight: v.videoHeight,
+                    })
+                    if (!isFinite(v.duration)) {
+                      v.currentTime = 1e101
+                    }
+                  }}
+                  onDurationChange={(e) => {
+                    const v = e.currentTarget
+                    if (isFinite(v.duration) && v.currentTime > v.duration) {
+                      v.currentTime = 0
+                    }
+                  }}
+                />
+                {turn.videoUrl && (
+                  <a
+                    href={turn.videoUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-1 block text-xs text-slate-400 underline"
+                  >
+                    Open video file directly
+                  </a>
+                )}
+              </div>
             )}
           </div>
         ))}

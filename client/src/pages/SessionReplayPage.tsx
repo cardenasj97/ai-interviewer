@@ -1,7 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { getSession } from '@ui/api/sessions'
-import TranscriptPane from '@ui/components/TranscriptPane'
+import TurnList from '@ui/components/TurnList'
 import EvaluationCard from '@ui/components/EvaluationCard'
 import ErrorBanner from '@ui/components/ErrorBanner'
 import { ApiClientError } from '@ui/api/client'
@@ -70,12 +70,7 @@ export default function SessionReplayPage() {
         </div>
       )}
 
-      <section>
-        <h2 className="mb-3 text-lg font-semibold text-slate-700">Full Transcript</h2>
-        <div className="rounded-xl border border-slate-100 bg-white p-4">
-          <TranscriptPane turns={turns} />
-        </div>
-      </section>
+      <TurnList turns={turns} />
     </div>
   )
 }
