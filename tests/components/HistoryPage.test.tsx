@@ -5,22 +5,26 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import HistoryPage from '@ui/pages/HistoryPage'
 import * as historyApi from '@ui/api/history'
 import * as jobsApi from '@ui/api/jobs'
-import type { SessionListItem } from '@/types/domain'
+import type { SessionHistoryItem } from '@/types/domain'
 import type { JobListItemWithPack } from '@ui/api/jobs'
 
 vi.mock('@ui/api/history')
 vi.mock('@ui/api/jobs')
+vi.mock('@ui/lib/mock-history', () => ({
+  MOCK_HISTORY: [],
+  mergeHistory: (real: unknown[]) => real,
+}))
 
-function makeSession(overrides: Partial<SessionListItem> = {}): SessionListItem {
+function makeSession(overrides: Partial<SessionHistoryItem> = {}): SessionHistoryItem {
   return {
     id: '11111111-1111-4111-8111-111111111111',
     jobSlug: 'frontend-engineer',
     jobTitle: 'Frontend Engineer',
-    status: 'completed',
-    questionsAsked: 6,
+    completedAt: '2026-04-21T10:25:00.000Z',
+    durationSeconds: 1500,
+    questionCount: 6,
     overallScore: 82,
-    startedAt: '2026-04-21T10:00:00.000Z',
-    endedAt: '2026-04-21T10:25:00.000Z',
+    decisionSignal: 'hire',
     ...overrides,
   }
 }
@@ -56,7 +60,7 @@ beforeEach(() => {
 
 describe('HistoryPage', () => {
   it('shows empty state when no sessions', async () => {
-    vi.mocked(historyApi.listHistory).mockResolvedValue({ sessions: [], totalCount: 0 })
+    vi.mocked(historyApi.listHistory).mockResolvedValue([])
     renderPage()
     await waitFor(() => {
       expect(screen.getByText(/No past interviews yet/i)).toBeInTheDocument()
@@ -64,10 +68,7 @@ describe('HistoryPage', () => {
   })
 
   it('renders session cards with job title and score', async () => {
-    vi.mocked(historyApi.listHistory).mockResolvedValue({
-      sessions: [makeSession()],
-      totalCount: 1,
-    })
+    vi.mocked(historyApi.listHistory).mockResolvedValue([makeSession()])
     renderPage()
     await waitFor(() => {
       // job title appears in both the session card heading and the dropdown option
@@ -78,10 +79,7 @@ describe('HistoryPage', () => {
   })
 
   it('renders Replay link for each session', async () => {
-    vi.mocked(historyApi.listHistory).mockResolvedValue({
-      sessions: [makeSession()],
-      totalCount: 1,
-    })
+    vi.mocked(historyApi.listHistory).mockResolvedValue([makeSession()])
     renderPage()
     await waitFor(() => {
       const link = screen.getByRole('link', { name: /Replay/i })
@@ -90,7 +88,7 @@ describe('HistoryPage', () => {
   })
 
   it('re-fetches when role filter changes', async () => {
-    vi.mocked(historyApi.listHistory).mockResolvedValue({ sessions: [], totalCount: 0 })
+    vi.mocked(historyApi.listHistory).mockResolvedValue([])
     renderPage()
 
     // wait for empty state to confirm initial fetch completed
@@ -108,17 +106,16 @@ describe('HistoryPage', () => {
     })
 
     const lastCall = vi.mocked(historyApi.listHistory).mock.calls.at(-1)?.[0]
-    expect(lastCall).toMatchObject({ role: 'frontend-engineer' })
+    expect(lastCall).toMatchObject({ jobSlug: 'frontend-engineer' })
   })
 
-  it('renders status badge for each session', async () => {
-    vi.mocked(historyApi.listHistory).mockResolvedValue({
-      sessions: [makeSession({ status: 'abandoned' })],
-      totalCount: 1,
-    })
+  it('renders decision signal badge for each session', async () => {
+    vi.mocked(historyApi.listHistory).mockResolvedValue([
+      makeSession({ decisionSignal: 'strong_hire' }),
+    ])
     renderPage()
     await waitFor(() => {
-      expect(screen.getByText('abandoned')).toBeInTheDocument()
+      expect(screen.getByText(/strong hire/i)).toBeInTheDocument()
     })
   })
 })

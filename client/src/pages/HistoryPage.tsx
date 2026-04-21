@@ -6,6 +6,7 @@ import { listJobs } from '@ui/api/jobs'
 import ErrorBanner from '@ui/components/ErrorBanner'
 import { ApiClientError } from '@ui/api/client'
 import { formatRelativeTime, formatDuration, scoreColorClass } from '@ui/lib/format'
+import { mergeHistory, MOCK_HISTORY } from '@ui/lib/mock-history'
 
 function SkeletonCard() {
   return (
@@ -23,11 +24,11 @@ function SkeletonCard() {
 }
 
 export default function HistoryPage() {
-  const [roleFilter, setRoleFilter] = useState<string>('')
+  const [jobSlug, setJobSlug] = useState<string>('')
 
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['history', roleFilter],
-    queryFn: () => listHistory({ role: roleFilter || undefined, limit: 50 }),
+    queryKey: ['history', jobSlug],
+    queryFn: () => listHistory({ jobSlug: jobSlug || undefined, limit: 50 }),
     staleTime: 60 * 1000,
   })
 
@@ -37,7 +38,9 @@ export default function HistoryPage() {
     staleTime: 5 * 60 * 1000,
   })
 
-  const sessions = data?.sessions ?? []
+  const merged = mergeHistory(data ?? [])
+  const sessions = jobSlug ? merged.filter((s) => s.jobSlug === jobSlug) : merged
+  const mockIds = new Set(MOCK_HISTORY.map((s) => s.id))
 
   return (
     <section className="mx-auto max-w-4xl p-6">
@@ -49,8 +52,8 @@ export default function HistoryPage() {
       {/* Filter bar */}
       <div className="mb-6 flex gap-3">
         <select
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
+          value={jobSlug}
+          onChange={(e) => setJobSlug(e.target.value)}
           className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
           aria-label="Filter by role"
         >
@@ -89,11 +92,7 @@ export default function HistoryPage() {
       {!isLoading && sessions.length > 0 && (
         <div className="space-y-4">
           {sessions.map((session) => {
-            const durationMs =
-              session.endedAt && session.startedAt
-                ? new Date(session.endedAt).getTime() - new Date(session.startedAt).getTime()
-                : null
-
+            const isMock = mockIds.has(session.id)
             return (
               <div
                 key={session.id}
@@ -104,18 +103,21 @@ export default function HistoryPage() {
                     <h2 className="text-base font-semibold text-slate-900 truncate">
                       {session.jobTitle}
                     </h2>
-                    <span className="text-xs font-medium text-slate-400 capitalize px-2 py-0.5 rounded-full bg-slate-100">
-                      {session.status}
-                    </span>
+                    {session.decisionSignal && (
+                      <span className="text-xs font-medium text-slate-400 capitalize px-2 py-0.5 rounded-full bg-slate-100">
+                        {session.decisionSignal.replace(/_/g, ' ')}
+                      </span>
+                    )}
+                    {isMock && (
+                      <span className="text-xs font-medium text-amber-700 px-2 py-0.5 rounded-full bg-amber-100">
+                        Sample
+                      </span>
+                    )}
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500">
-                    {session.endedAt && (
-                      <span>{formatRelativeTime(session.endedAt)}</span>
-                    )}
-                    {durationMs !== null && (
-                      <span>{formatDuration(durationMs)}</span>
-                    )}
-                    <span>{session.questionsAsked} questions</span>
+                    <span>{formatRelativeTime(session.completedAt)}</span>
+                    <span>{formatDuration(session.durationSeconds * 1000)}</span>
+                    <span>{session.questionCount} questions</span>
                     {session.overallScore !== null && (
                       <span className={`font-semibold ${scoreColorClass(session.overallScore)}`}>
                         Score: {session.overallScore}
@@ -123,12 +125,21 @@ export default function HistoryPage() {
                     )}
                   </div>
                 </div>
-                <Link
-                  to={`/replay/${session.id}`}
-                  className="ml-4 shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                >
-                  Replay
-                </Link>
+                {isMock ? (
+                  <span
+                    className="ml-4 shrink-0 rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-400 cursor-not-allowed"
+                    title="Replay is not available for sample data"
+                  >
+                    Replay
+                  </span>
+                ) : (
+                  <Link
+                    to={`/replay/${session.id}`}
+                    className="ml-4 shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  >
+                    Replay
+                  </Link>
+                )}
               </div>
             )
           })}

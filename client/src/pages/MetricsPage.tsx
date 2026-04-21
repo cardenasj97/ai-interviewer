@@ -14,6 +14,7 @@ import { getMetrics } from '@ui/api/metrics'
 import ErrorBanner from '@ui/components/ErrorBanner'
 import { ApiClientError } from '@ui/api/client'
 import { scoreColorClass } from '@ui/lib/format'
+import { mergeMetrics } from '@ui/lib/mock-history'
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
@@ -40,11 +41,12 @@ function SkeletonMetrics() {
 }
 
 export default function MetricsPage() {
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const { data: realData, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['metrics'],
     queryFn: getMetrics,
     staleTime: 2 * 60 * 1000,
   })
+  const data = realData ? mergeMetrics(realData) : undefined
 
   if (isLoading) return <SkeletonMetrics />
 
@@ -79,7 +81,10 @@ export default function MetricsPage() {
     <section className="mx-auto max-w-4xl p-6">
       <header className="mb-6">
         <h1 className="text-3xl font-bold text-slate-900">Metrics</h1>
-        <p className="mt-2 text-slate-500">Aggregate performance across all your interviews.</p>
+        <p className="mt-2 text-slate-500">
+          Aggregate performance across all your interviews.{' '}
+          <span className="text-amber-700">Includes sample data for demo purposes.</span>
+        </p>
       </header>
 
       {/* Top stat row */}
@@ -124,10 +129,10 @@ export default function MetricsPage() {
           <ResponsiveContainer width="100%" height={240}>
             <LineChart data={data.scoreTrend} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+              <XAxis dataKey="completedAt" tick={{ fontSize: 12 }} />
               <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
-              <Tooltip formatter={(v) => [`${v ?? ''}`, 'Avg score']} />
-              <Line type="monotone" dataKey="avgScore" stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} />
+              <Tooltip formatter={(v) => [`${v ?? ''}`, 'Score']} />
+              <Line type="monotone" dataKey="overallScore" stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>

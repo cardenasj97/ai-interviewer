@@ -3,7 +3,6 @@ import { z } from 'zod'
 import { validate } from '@/middleware/zod-middleware'
 import { CreateSessionRequestSchema, IdSchema, SubmitAnswerRequestSchema } from '@/types/domain'
 import * as sessionService from '@/services/session-service'
-import { SESSION_COOKIE_NAME } from '@/middleware/session-cookie'
 
 const router = Router()
 
@@ -45,9 +44,9 @@ router.post(
         req.body as z.infer<typeof SubmitAnswerRequestSchema>,
       )
 
-      if (result.evaluation) {
-        res.clearCookie(SESSION_COOKIE_NAME, { path: '/' })
-      }
+      // Keep the session ID in the cookie even after evaluation so it
+      // shows up in the user's history list. Re-set to refresh the maxAge.
+      res.locals.setInterviewSessionId?.(req.params['id'] as string)
 
       res.status(200).json({ data: result })
     } catch (err) {
@@ -59,7 +58,8 @@ router.post(
 router.post('/:id/abandon', validate({ params: IdParamsSchema }), async (req, res, next) => {
   try {
     const result = await sessionService.abandonSession(req.params['id'] as string)
-    res.clearCookie(SESSION_COOKIE_NAME, { path: '/' })
+    // Keep the session ID in the cookie so it counts in metrics (abandoned bucket).
+    res.locals.setInterviewSessionId?.(req.params['id'] as string)
     res.status(200).json({ data: result })
   } catch (err) {
     next(err)

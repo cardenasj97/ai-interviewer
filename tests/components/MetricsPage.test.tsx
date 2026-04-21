@@ -1,12 +1,15 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import MetricsPage from '@ui/pages/MetricsPage'
 import * as metricsApi from '@ui/api/metrics'
-import type { AggregateMetrics } from '@ui/api/metrics'
+import type { MetricsSummary } from '@/types/domain'
 
 vi.mock('@ui/api/metrics')
+vi.mock('@ui/lib/mock-history', () => ({
+  mergeMetrics: (real: unknown) => real,
+}))
 
 vi.mock('recharts', () => ({
   BarChart: (_props: unknown) => <div data-testid="bar-chart" />,
@@ -20,19 +23,19 @@ vi.mock('recharts', () => ({
   Line: () => null,
 }))
 
-function makeMetrics(overrides: Partial<AggregateMetrics> = {}): AggregateMetrics {
+function makeMetrics(overrides: Partial<MetricsSummary> = {}): MetricsSummary {
   return {
     totalSessions: 10,
     completedSessions: 8,
     abandonedSessions: 2,
     avgOverallScore: 74,
     competencyAverages: [
-      { competency: 'React', avgScore: 80 },
-      { competency: 'TypeScript', avgScore: 70 },
+      { competency: 'React', avgScore: 80, sampleCount: 4 },
+      { competency: 'TypeScript', avgScore: 70, sampleCount: 4 },
     ],
     scoreTrend: [
-      { date: '2026-04-01', avgScore: 65 },
-      { date: '2026-04-10', avgScore: 74 },
+      { completedAt: '2026-04-01T10:00:00.000Z', overallScore: 65 },
+      { completedAt: '2026-04-10T10:00:00.000Z', overallScore: 74 },
     ],
     ...overrides,
   }

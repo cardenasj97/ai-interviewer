@@ -31,6 +31,19 @@ yarn dev                        # API on :3000, Vite on :5173
 | `yarn db:migrate` | Apply pending migrations |
 | `yarn db:seed` | Upsert seed jobs (idempotent) |
 
+## Interview Rules
+
+These are enforced server-side in `InterviewerService.decide` — the LLM's `shouldEndInterview` is overridden if it tries to end early or exceed the cap.
+
+| Rule | Value | Source |
+|---|---|---|
+| Minimum questions before the interview can end | **6** | `src/services/interviewer-service.ts` (Guard 1) |
+| Maximum questions (hard cap per session) | `session.maxQuestions` — default **6** | `src/db/schema.ts` (`interview_sessions.max_questions`) |
+| Minimum follow-ups required | **2** | `src/services/interviewer-service.ts` (Guard 3) |
+| First turn must be | `opener` (if no prior candidate turn) | `src/services/interviewer-service.ts` (Guard 4) |
+
+A session is marked `completed` (and the final evaluation is generated) only when `shouldEndInterview = true` after these guards are applied.
+
 ## Deploy
 
 Single Render web service — see `render.yaml`. Build runs migrations + seed; start boots the server that serves both API and built client.

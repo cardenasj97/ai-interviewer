@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getJob } from '@ui/api/jobs'
 import { createSession, getSession, submitAnswer, abandonSession } from '@ui/api/sessions'
 import { transcribeAudio } from '@ui/api/stt'
@@ -36,6 +36,7 @@ function safeRemoveStorage(key: string) {
 
 export function useInterviewSession(slug: string) {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [state, dispatch] = useReducer(interviewReducer, initialState)
   const synthesis = useSpeechSynthesis()
   const recognition = useSpeechRecognition()
@@ -85,6 +86,8 @@ export function useInterviewSession(slug: string) {
       if (evaluation) {
         dispatch({ type: 'FINISHED', candidateTurn, evaluation, decisionSignal })
         safeRemoveStorage(sessionKey(slug))
+        queryClient.invalidateQueries({ queryKey: ['history'] })
+        queryClient.invalidateQueries({ queryKey: ['metrics'] })
         navigate(`/session/${variables.sessionId}`)
       } else if (nextInterviewerTurn) {
         dispatch({ type: 'ANSWER_ACCEPTED', candidateTurn, nextTurn: nextInterviewerTurn, decisionSignal })

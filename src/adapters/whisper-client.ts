@@ -11,6 +11,7 @@ function getClient(): OpenAI {
 export async function transcribe(input: {
   audio: Buffer
   mimeType: 'audio/webm' | 'audio/mp4' | 'audio/wav'
+  prompt?: string
 }): Promise<{ text: string; confidence: number | null }> {
   const client = getClient()
 
@@ -27,6 +28,7 @@ export async function transcribe(input: {
       model: 'whisper-1',
       file,
       response_format: 'json',
+      ...(input.prompt ? { prompt: input.prompt } : {}),
     })
 
     return { text: result.text, confidence: null }

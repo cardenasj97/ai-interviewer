@@ -1,22 +1,13 @@
 import { apiFetch } from './client'
-import type { SessionListItem } from '@/types/domain'
+import type { SessionHistoryItem } from '@/types/domain'
 
-export interface ListHistoryParams {
-  role?: string
-  limit?: number
-  offset?: number
-}
-
-export interface SessionHistoryResponse {
-  sessions: SessionListItem[]
-  totalCount: number
-}
-
-export function listHistory(params: ListHistoryParams = {}): Promise<SessionHistoryResponse> {
+export function listHistory(
+  params: { jobSlug?: string; limit?: number; cursor?: string } = {},
+): Promise<SessionHistoryItem[]> {
   const query = new URLSearchParams()
-  if (params.role) query.set('role', params.role)
+  if (params.jobSlug) query.set('jobSlug', params.jobSlug)
   if (params.limit !== undefined) query.set('limit', String(params.limit))
-  if (params.offset !== undefined) query.set('offset', String(params.offset))
+  if (params.cursor) query.set('cursor', params.cursor)
   const qs = query.toString()
   return apiFetch(`/history${qs ? `?${qs}` : ''}`)
 }
