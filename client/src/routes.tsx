@@ -3,6 +3,9 @@ import App from './App'
 import JobListPage from './pages/JobListPage'
 import InterviewRoomPage from './pages/InterviewRoomPage'
 import ResultsPage from './pages/ResultsPage'
+import HistoryPage from './pages/HistoryPage'
+import MetricsPage from './pages/MetricsPage'
+import SessionReplayPage from './pages/SessionReplayPage'
 
 function NotFoundPage() {
   return (
@@ -24,6 +27,9 @@ export const router = createBrowserRouter([
       { index: true, element: <JobListPage /> },
       { path: 'interview/:slug', element: <InterviewRoomPage /> },
       { path: 'session/:id', element: <ResultsPage /> },
+      { path: 'history', element: <HistoryPage /> },
+      { path: 'metrics', element: <MetricsPage /> },
+      { path: 'replay/:id', element: <SessionReplayPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },
