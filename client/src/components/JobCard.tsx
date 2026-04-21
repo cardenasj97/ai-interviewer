@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
-import type { JobListItem } from '@/types/domain'
+import type { JobListItemWithPack } from '@ui/api/jobs'
+import QuestionPackPreview from './QuestionPackPreview'
 
 const LEVEL_COLORS: Record<string, string> = {
   junior: 'bg-blue-100 text-blue-800',
@@ -9,7 +10,7 @@ const LEVEL_COLORS: Record<string, string> = {
 }
 
 interface JobCardProps {
-  job: JobListItem
+  job: JobListItemWithPack
 }
 
 export default function JobCard({ job }: JobCardProps) {
@@ -35,6 +36,7 @@ export default function JobCard({ job }: JobCardProps) {
         </span>
       </div>
       <p className="text-sm text-slate-600">{job.shortDescription}</p>
+      <QuestionPackPreview pack={job.questionPack} />
       <div className="mt-4 text-sm font-medium text-indigo-600">Start interview →</div>
     </article>
   )
