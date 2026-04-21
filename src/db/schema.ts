@@ -74,6 +74,7 @@ export const turns = pgTable(
     questionKind: text('question_kind', { enum: ['opener', 'primary', 'follow_up', 'closer'] }),
     sttConfidence: real('stt_confidence'),
     audioUrl: text('audio_url'),
+    videoUrl: text('video_url'),
     sourceQuestionId: text('source_question_id'),
     spokenDurationMs: integer('spoken_duration_ms'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

@@ -18,6 +18,7 @@ function rowToTurn(row: typeof turns.$inferSelect): Turn {
     questionKind: row.questionKind ?? null,
     sttConfidence: row.sttConfidence ?? null,
     audioUrl: row.audioUrl ?? null,
+    videoUrl: row.videoUrl ?? null,
     sourceQuestionId: row.sourceQuestionId ?? null,
     spokenDurationMs: row.spokenDurationMs ?? null,
     createdAt: toIso(row.createdAt),
@@ -35,6 +36,7 @@ export async function insertTurn(input: Omit<Turn, 'id' | 'createdAt'>): Promise
       questionKind: input.questionKind ?? undefined,
       sttConfidence: input.sttConfidence ?? undefined,
       audioUrl: input.audioUrl ?? undefined,
+      videoUrl: input.videoUrl ?? undefined,
       sourceQuestionId: input.sourceQuestionId ?? undefined,
       spokenDurationMs: input.spokenDurationMs ?? undefined,
     })

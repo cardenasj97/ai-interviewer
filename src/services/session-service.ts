@@ -50,6 +50,7 @@ function rowToTurn(row: typeof turnsTable.$inferSelect): Turn {
     questionKind: row.questionKind ?? null,
     sttConfidence: row.sttConfidence ?? null,
     audioUrl: row.audioUrl ?? null,
+    videoUrl: row.videoUrl ?? null,
     sourceQuestionId: row.sourceQuestionId ?? null,
     spokenDurationMs: row.spokenDurationMs ?? null,
     createdAt: row.createdAt.toISOString(),
@@ -211,6 +212,7 @@ export async function submitAnswer(
         questionKind: undefined,
         sttConfidence: input.sttConfidence ?? undefined,
         spokenDurationMs: input.spokenDurationMs ?? undefined,
+        videoUrl: input.videoUrl ?? undefined,
       })
       .returning()
     if (!candidateRow) throw new AppError('INTERNAL_ERROR', 'Failed to insert candidate turn', 500)

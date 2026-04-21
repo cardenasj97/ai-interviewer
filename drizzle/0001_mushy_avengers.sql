@@ -1,0 +1,1 @@
+ALTER TABLE "turns" ADD COLUMN "video_url" text;

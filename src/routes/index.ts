@@ -5,6 +5,7 @@ import jobsRouter from './jobs'
 import metricsRouter from './metrics'
 import sessionsRouter from './sessions'
 import sttRouter from './stt'
+import videoUploadRouter from './video-upload'
 
 const router = Router()
 
@@ -14,5 +15,6 @@ router.use('/jobs', jobsRouter)
 router.use('/metrics', metricsRouter)
 router.use('/sessions', sessionsRouter)
 router.use('/stt', sttRouter)
+router.use('/video-upload', videoUploadRouter)
 
 export default router
