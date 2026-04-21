@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: aq-latam-take-home
+    env: node
+    plan: starter
+    region: oregon
+    buildCommand: yarn install --frozen-lockfile && yarn build && yarn drizzle-kit migrate && yarn db:seed
+    startCommand: yarn start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: SESSION_COOKIE_SECRET
+        generateValue: true
+      - key: LOG_LEVEL
+        value: info

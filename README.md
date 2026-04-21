@@ -1,21 +1,38 @@
-# Welcome to Candidate Code
+# AI Interviewer
 
-This README file has been created by the Candidate Code platform.
+Lightweight single-process web app: pick a sample job, enter a voice-only Interview Room, and get a role-grounded dynamic interview with a final structured evaluation.
 
-Before you send this challenge to a real candidate, you'll want to either change or remove this file and add your own challenge's code. 
+## Stack
 
-### If you've been sent this as part of an assignment
+Node 20 · TypeScript 5 · Express 4 · React 18 + Vite 5 · Tailwind 3 · Neon Postgres 16 + Drizzle ORM · Zod · OpenAI `gpt-4o-mini` · Vitest
 
-* It's likely your team is testing us out for the first time
-* You have cloned this from a repository created specially for this assignment
-* Try committing and pushing some changes to this file (or adding others)
-* The person that sent you this will able to see any changes in a diff on the assignment page in Candidate Code
-* They can also comment, adding ratings, etc. from that page
-* After you've finished, Ask them to invite you to the team so can see the results too
+## Quickstart
 
-### If you've cloned this repository from the challenge page
+```bash
+cp .env.example .env            # fill in DATABASE_URL, OPENAI_API_KEY, SESSION_COOKIE_SECRET
+yarn install
+yarn db:generate                # first time only; commits drizzle/ migration
+yarn dev                        # API on :3000, Vite on :5173
+```
 
-* This repository **acts as a template for the coding challenges** you send to candidates.
-* The `master` branch of this repository becomes the **starting point** for a candidate's code challenge
-* When a challenge is later assigned to a candidate **a new, separate repository will be created** for them to work in
-* The history of the template repository will **not be visible** to a candidate. They will only see one `Initial Commit` created from the master branch of the template.
+- API health: `GET http://localhost:3000/api/v1/health`
+- Client: `http://localhost:5173`
+
+## Scripts
+
+| Script | What it does |
+|---|---|
+| `yarn dev` | API (tsx watch) + Vite dev server in parallel |
+| `yarn build` | Compile server + build client bundle |
+| `yarn start` | Run compiled server (serves built client in prod) |
+| `yarn test` | Vitest (supertest + RTL) |
+| `yarn tsc` | Type-check without emit |
+| `yarn db:generate` | Generate Drizzle migration from `src/db/schema.ts` |
+| `yarn db:migrate` | Apply pending migrations |
+| `yarn db:seed` | Upsert seed jobs (idempotent) |
+
+## Deploy
+
+Single Render web service — see `render.yaml`. Build runs migrations + seed; start boots the server that serves both API and built client.
+
+See `CLAUDE.md` for the full project context.
